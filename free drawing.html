@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		
+		<script src="https://code.jquery.com/jquery-3.1.1.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/1.7.1/fabric.min.js"></script>
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css" integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
+	</head>
+	<body>
+	    <div id="tool">
+	<button id="save_as" onclick="download()">save As</button><i class="fa fa-print" style="font-size:28px;margin-left:0px;" id="print"></i>
+	<i class="fa fa-undo" id="undo" onclick="javascript:undo();"></i><i class="fa fa-redo" id="redo" onclick="javascript:redo();"></i>
+	<i class="fas fa-pencil-alt" id="pen"></i><i class="fas fa-eraser" id="eraser"></i>
+	<input class="jscolor{backgroundColor:'#525252'}" value="#000" id="color"/>
+	<input type="range" id="size" class="slider" min="1" max="150" value="1"/><input type="number" id="sizen" value="1"/>
+	<i class="fas fa-trash-alt" id="bin" style="font-size:28px;margin-left:15px;"></i>
+    </div>
+	<canvas id="canvas" height="880" width="1277"></canvas>
+	<style>
+	body{
+	    margin:0px;
+	    overflow:hidden;
+	}
+	input:focus {
+    outline:none;
+}
+button:focus{
+    outline:none;
+}
+
+	#sizen{
+	    color:white;
+	    width:50px;
+	    border:2px solid skyblue;
+	    border-radius:6px;
+	    background-color:grey;
+	}
+	    #tool{
+	        width:100%;
+	        height:38px;
+	        border:none;
+	        border-bottom:2px dashed;
+	    }
+	    #save_as{
+	        height:100%;
+	        width:150px;
+	        border:none;
+	        font-size:20px;
+	        background:#ffc107;
+	        color:white;
+	        margin-right:15px;
+	        
+	    }
+	    #save_as:hover{
+	        background:#ffdb6e;
+	    }
+	    #undo,#redo{
+	        font-size:22px;
+	        margin-left:8px;
+	        margin-top:2px;
+	        color:#1b97e8;
+	        font-weight:bold;
+	        border:2px solid;
+	        padding:3px;
+	        border-radius:5px;
+	    }
+	    #undo:hover,#redo:hover{
+	        color:#55a4d8;
+	    }
+	    #pen{
+	        margin:0px;
+	        font-size:22px;
+	        margin-left:15px;
+	        border:1px solid black;
+	        padding:5px;
+	       background:#59de50 ;
+	        border-radius:8px 0px 0px 8px;
+	        padding-left:12px;
+	        padding-right:10px;
+	    }
+	    
+	    #eraser{
+	        margin:0px;
+	        font-size:22px;
+	        margin-left:0px;
+	        border:1px solid black;
+	        padding:5px;
+	        border-radius:0px 8px 8px 0px;
+	        padding-left:10px;
+	        padding-right:12px;
+	    }
+	    #color{
+	        height:25px;
+	        border:1px solid;
+	        border-radius:6px;
+	        text-align:center;
+	        width:160px;
+	        margin-left:8px;
+	        font-size:15px;
+	    }
+	 .slider {
+  -webkit-appearance: none;
+ width:150px;
+  height:8px;
+  border-radius: 5px;
+  background:white;
+  outline: none;
+ 
+ margin-left:10px;
+ border:2px solid;
+}
+
+.slider:hover {
+  background:#e0dede;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height:20px;
+  border-radius: 50%;
+  background:#11f1cd;
+  cursor:w-resize;
+}
+
+}
+</style>	
+	    <script>
+	   var canvas=window._canvas=new fabric.Canvas("canvas",{isDrawingMode:true});
+	   $("#size").on("input",function(){
+	       $("#sizen").val($(this).val());
+	       canvas.freeDrawingBrush.width=parseInt($(this).val());
+	   });
+	   $("#sizen").on("input",function(){
+	       $("#size").val($(this).val());
+	       canvas.freeDrawingBrush.width=parseInt($(this).val());
+	   });
+	   $("#color").change(function(){
+	       canvas.freeDrawingBrush.color="#"+$(this).val();
+           $("#eraser").css("background","none");
+	       $("#pen").css("background-color","#59de50");
+	   });
+	   $("#eraser").click(function(){
+	       canvas.freeDrawingBrush.color="#fff";
+	       $("#pen").css("background","none");
+	       $(this).css("background-color","#59de50");
+	   });
+	   $("#pen").click(function(){
+	       $("#eraser").css("background","none");
+	       $(this).css("background-color","#59de50");
+	       canvas.freeDrawingBrush.color="#"+$("#color").val();
+	   });
+	   function download() {
+  var element = document.createElement('a');
+  element.setAttribute('href', canvas.toDataURL());
+  element.setAttribute('download',"picture.png");
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+$("#bin").click(function(){
+   canvas.clear(); 
+  
+});
+canvas.on('object:added',function(){
+  if(!isRedoing){
+    h = [];
+  }
+  isRedoing = false;
+});
+
+var isRedoing = false;
+var h = [];
+function undo(){
+  if(canvas._objects.length>0){
+   h.push(canvas._objects.pop());
+   canvas.renderAll();
+  }
+}
+function redo(){
+  if(h.length>0){
+    isRedoing = true;
+   canvas.add(h.pop());
+  }
+}
+$("#print").click(function(){
+    $("#tool").hide();
+    window.print();
+    $("#tool").show();
+});
+	    </script>
+	</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
